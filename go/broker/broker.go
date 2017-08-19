@@ -195,6 +195,7 @@ func (brk *_JoqueBroker) EnqueueJob(job Job, orig Originator) {
 		topic.jobQueHead = nfo
 		topic.jobQueTail[prior] = nfo
 	}
+	glog.Infof("job %d enqueued", job.ID())
 }
 
 func (topic *_Topic) ExecuteNextJob() (wrkNfo *_WorkerNfo) {
@@ -261,7 +262,7 @@ func (brk *_JoqueBroker) ExecuteJobs() {
 	}
 }
 
-func (brk *_JoqueBroker) JobDone(wrkID int64, jobID int64) {
+func (brk *_JoqueBroker) JobDone(wrkID int64, jobID int64) (job Job, orig Originator) {
 	wrk := brk.workers[wrkID]
 	if wrk == nil {
 		glog.Errorf("opss, there is no worker with id %d which just done job %d", wrkID, jobID)
@@ -269,7 +270,7 @@ func (brk *_JoqueBroker) JobDone(wrkID int64, jobID int64) {
 	}
 
 	currJob := wrk.currJob
-	job := currJob.job
+	job = currJob.job
 
 	if job.ID() != jobID {
 		glog.Errorf("opss, worker with id %d which just done job %d executes job %d", wrkID, jobID, job.ID())
@@ -282,18 +283,23 @@ func (brk *_JoqueBroker) JobDone(wrkID int64, jobID int64) {
 	if !job.IsSucceeded() {
 		if job.CanRetryWithTTL() {
 			brk.EnqueueJob(job, currJob.orig)
+			job = nil
 			return
 		}
 	}
 
-	if job.QoS() >= QosComplete {
-		brk.CompleteJob(currJob.orig, job)
-	}
+	orig = currJob.orig
+	return
 }
 
 func (brk *_JoqueBroker) CompleteJob(orig Originator, job Job) {
 	// have i use a goroutine?!
 	orig.Complete(job)
+}
+
+func (brk *_JoqueBroker) AcknowledgeJob(orig Originator, job Job) {
+	// have i use a goroutine?!
+	orig.Acknowledge(job)
 }
 
 // StartJoqueBroker starts joque broker
@@ -338,13 +344,19 @@ func StartJoqueBroker() Broker {
 				glog.Infof("joque broker stoped")
 				close(brk.chStop)
 				return
+			case chas := <-brk.chJobDone:
+				glog.Infof("done job %d", chas.jobID)
+				job, orig := brk.JobDone(chas.wrkID, chas.jobID)
+				if job != nil && job.QoS() >= QosComplete {
+					brk.CompleteJob(orig, job)
+				}
+				brk.ExecuteJobs()
 			case chas := <-brk.chJobEnque:
 				glog.Infof("enqueue job %d", chas.job.ID())
 				brk.EnqueueJob(chas.job, chas.orig)
-				brk.ExecuteJobs()
-			case chas := <-brk.chJobDone:
-				glog.Infof("done job %d", chas.jobID)
-				brk.JobDone(chas.wrkID, chas.jobID)
+				if chas.job.QoS() > QosRelax {
+					brk.AcknowledgeJob(chas.orig, chas.job)
+				}
 				brk.ExecuteJobs()
 			case chas := <-brk.chSubscribe:
 				brk.RegisterWorker(chas.wrk, chas.topicName)
