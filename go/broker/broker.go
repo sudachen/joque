@@ -34,6 +34,8 @@ type Job interface {
 	SetResult([]byte)
 	Success()
 	IsSucceeded() bool
+	Reject()
+	IsRejected() bool
 	Topic() string
 	Payload() []byte
 	QoS() int
@@ -52,7 +54,6 @@ type Originator interface {
 	ID() int64
 	Acknowledge(Job)
 	Complete(Job)
-	Disconnect()
 }
 
 // Worker is the abstraction of a job execution service

@@ -274,7 +274,7 @@ func (mqt *ASCIIMqt) MqtWrite(wr io.Writer, m *Message) (err error) {
 			return
 		}
 	}
-	if (m.Kind == MqComplete || m.Kind == MqPublish) && m.Payload != nil && len(m.Payload) != 0 {
+	if (m.Kind == MqComplete || m.Kind == MqPublish || m.Kind == MqAck) && m.Payload != nil && len(m.Payload) != 0 {
 		if err = bf.WriteByte('\n'); err != nil {
 			return
 		}

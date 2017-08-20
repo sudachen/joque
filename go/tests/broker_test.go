@@ -188,10 +188,6 @@ func (org *_Originator) Complete(j Job) {
 	org.mu.Unlock()
 }
 
-func (org *_Originator) Disconnect() {
-	glog.Infof("disconnect originator %d", org.id)
-}
-
 type TestJob struct {
 	id       int64
 	topic    string

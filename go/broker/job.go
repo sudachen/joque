@@ -6,16 +6,22 @@ import (
 	"github.com/golang/glog"
 )
 
+const (
+	_UnknownJobState = iota
+	_RejectedJob
+	_SucceededJob
+)
+
 type _Job struct {
-	id        int64
-	result    []byte
-	succeeded bool
-	topic     string
-	payload   []byte
-	qos       int
-	ttl       int
-	priority  int
-	mesgID    int64
+	id       int64
+	result   []byte
+	state    int
+	topic    string
+	payload  []byte
+	qos      int
+	ttl      int
+	priority int
+	mesgID   int64
 }
 
 func (job *_Job) ID() int64 {
@@ -31,11 +37,19 @@ func (job *_Job) SetResult(result []byte) {
 }
 
 func (job *_Job) Success() {
-	job.succeeded = true
+	job.state = _SucceededJob
 }
 
 func (job *_Job) IsSucceeded() bool {
-	return job.succeeded
+	return job.state == _SucceededJob
+}
+
+func (job *_Job) Reject() {
+	job.state = _RejectedJob
+}
+
+func (job *_Job) IsRejected() bool {
+	return job.state == _RejectedJob
 }
 
 func (job *_Job) Topic() string {
@@ -91,13 +105,13 @@ func NewJob(topic string, payload []byte, priority int, ttl int, qos int) (job J
 		return
 	}
 	job = &_Job{
-		id:        NextID(),
-		topic:     topic,
-		payload:   payload,
-		priority:  priority,
-		ttl:       ttl,
-		qos:       qos,
-		succeeded: false,
+		id:       NextID(),
+		topic:    topic,
+		payload:  payload,
+		priority: priority,
+		ttl:      ttl,
+		qos:      qos,
+		state:    _UnknownJobState,
 	}
 	return
 }
