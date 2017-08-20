@@ -120,6 +120,7 @@ func (mqt *ASCIIMqt) MqtRead(rd io.Reader) (m *Message, err error) {
 	var qos int
 	var priority int
 	var payload []byte
+	var ttl int
 	bf := &bytes.Buffer{}
 	if err = mqt._ReadWord(rd, bf); err != nil {
 		return
@@ -172,6 +173,13 @@ func (mqt *ASCIIMqt) MqtRead(rd io.Reader) (m *Message, err error) {
 			mqt.bad = true
 			return
 		}
+		if err = mqt._ReadWord(rd, bf); err != nil {
+			return
+		}
+		if ttl, err = strconv.Atoi(bf.String()); err != nil {
+			mqt.bad = true
+			return
+		}
 	}
 	if kind == MqPublish || kind == MqComplete {
 		if err = mqt._ReadToNlNl(rd, bf); err != nil {
@@ -192,7 +200,9 @@ func (mqt *ASCIIMqt) MqtRead(rd io.Reader) (m *Message, err error) {
 		Topic:    topic,
 		Payload:  payload,
 		QoS:      qos,
-		Priority: priority}
+		Priority: priority,
+		TTL:      ttl,
+	}
 	return
 }
 
@@ -255,6 +265,12 @@ func (mqt *ASCIIMqt) MqtWrite(wr io.Writer, m *Message) (err error) {
 			return
 		}
 		if _, err = bf.WriteString(strconv.Itoa(m.Priority)); err != nil {
+			return
+		}
+		if err = bf.WriteByte(' '); err != nil {
+			return
+		}
+		if _, err = bf.WriteString(strconv.Itoa(m.TTL)); err != nil {
 			return
 		}
 	}

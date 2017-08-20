@@ -32,6 +32,7 @@ type Message struct {
 	Payload  []byte
 	QoS      int
 	Priority int
+	TTL      int
 }
 
 // MQT is the interface to message queue transports
@@ -63,8 +64,8 @@ func (mq *MQ) Send(m *Message) (err error) {
 	return
 }
 
-// MqtUpgrade upgrades network Conn to Message chanel
-func MqtUpgrade(rw interface{}, mqt MQT) (mq *MQ) {
+// Upgrade upgrades network Conn to Message chanel
+func Upgrade(rw interface{}, mqt MQT) (mq *MQ) {
 	mq = &MQ{make(chan *Message, 1), make(chan *Message, 1)}
 	go func() {
 		rd := rw.(io.Reader)

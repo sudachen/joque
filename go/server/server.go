@@ -6,7 +6,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/sudachen/joque/go/broker"
-	"github.com/sudachen/joque/go/client"
 	"github.com/sudachen/joque/go/transport"
 )
 
@@ -23,11 +22,12 @@ func (srv *JoqueServer) Stop() {
 }
 
 // StartJoqueServer starts Joque broker on specified tcp host:port
-func StartJoqueServer(where string) (srv *JoqueServer, err error) {
+func StartJoqueServer(where string, maxQueLength int, maxTTL int) (srv *JoqueServer, err error) {
 
 	glog.Infof("starting joque server")
 	srv = &JoqueServer{make(chan int)}
 	c := make(chan error)
+
 	go func() {
 		tcpAddr, err := net.ResolveTCPAddr("tcp", where)
 		if err != nil {
@@ -40,7 +40,7 @@ func StartJoqueServer(where string) (srv *JoqueServer, err error) {
 			return
 		}
 
-		brk := broker.StartJoqueBroker()
+		brk := broker.StartJoqueBroker(maxQueLength)
 
 		defer func() {
 			glog.Infof("stopping joque server")
@@ -68,8 +68,7 @@ func StartJoqueServer(where string) (srv *JoqueServer, err error) {
 				return
 			}
 			if conn != nil {
-				mq := transport.MqtUpgrade(conn, new(transport.ASCIIMqt))
-				client.Connect(mq, brk, 2)
+				Connect(transport.Upgrade(conn, new(transport.ASCIIMqt)), brk, maxTTL)
 			}
 			select {
 			case <-srv.chStop:

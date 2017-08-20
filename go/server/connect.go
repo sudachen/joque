@@ -1,6 +1,8 @@
-package client
+package server
 
 import (
+	"math"
+
 	"github.com/golang/glog"
 	"github.com/sudachen/joque/go/broker"
 	"github.com/sudachen/joque/go/transport"
@@ -48,8 +50,11 @@ func (wrk *_Worker) Disconnect() {
 }
 
 // Connect connects message queue and broker
-func Connect(mq *transport.MQ, brk broker.Broker, ttl int) (err error) {
+func Connect(mq *transport.MQ, brk broker.Broker, maxTTL int) (err error) {
 	c := make(chan error)
+	if maxTTL <= 0 {
+		maxTTL = math.MaxInt32
+	}
 	go func() {
 		results := make(map[int64]broker.Job)
 		jobs := make(map[int64]broker.Job)
@@ -57,7 +62,7 @@ func Connect(mq *transport.MQ, brk broker.Broker, ttl int) (err error) {
 		chComplete := make(chan broker.Job, 1)
 		chAcknowledge := make(chan broker.Job, 1)
 		chExec := make(chan broker.Job, 1)
-		chDisconnect := make(chan int)
+		chDisconnect := make(chan int, 1)
 
 		defer func() {
 			mq.Close()
@@ -122,6 +127,10 @@ func Connect(mq *transport.MQ, brk broker.Broker, ttl int) (err error) {
 							chAcknowledge,
 							chDisconnect,
 						}
+					}
+					var ttl = m.TTL
+					if maxTTL < ttl {
+						ttl = maxTTL
 					}
 					job, err := broker.NewJob(m.Topic, m.Payload, m.Priority, ttl, m.QoS)
 					if err != nil {

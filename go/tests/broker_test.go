@@ -223,7 +223,7 @@ func (tj *TestJob) ToJob(t *testing.T) (j Job) {
 }
 
 func TestStartStop(t *testing.T) {
-	brk := StartJoqueBroker()
+	brk := StartJoqueBroker(0)
 	glog.Info("started?")
 	brk.Stop()
 }
@@ -238,7 +238,7 @@ func MakeTestset1(count int) (tj []*TestJob) {
 
 func TestJobSet1(t *testing.T) {
 	testset := MakeTestset1(100)
-	brk := StartJoqueBroker()
+	brk := StartJoqueBroker(0)
 	StartWorker("test", testset, brk, t, nil)
 	StartWorker("test", testset, brk, t, nil)
 	org := StartOriginator(t, nil)
@@ -281,7 +281,7 @@ func (a *_PriorityAssert) OnExec(j Job, t *testing.T) {
 
 func TestJobPriority1(t *testing.T) {
 	testset := MakeTestsetPriority(10)
-	brk := StartJoqueBroker()
+	brk := StartJoqueBroker(0)
 	org := StartOriginator(t, &_PriorityAssert{})
 	org.Go(testset, brk)
 	org.Done()
@@ -292,7 +292,7 @@ func TestJobPriority1(t *testing.T) {
 
 func TestJobPriority2(t *testing.T) {
 	testset := MakeTestsetPriority(10000)
-	brk := StartJoqueBroker()
+	brk := StartJoqueBroker(0)
 	// I can't check priority on complete because order of complete
 	//   from several workers is not determinated
 	org := StartOriginator(t, nil)

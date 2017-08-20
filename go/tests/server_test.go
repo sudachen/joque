@@ -7,7 +7,7 @@ import (
 )
 
 func TestServer1(t *testing.T) {
-	srv, err := StartJoqueServer("localhost:9100")
+	srv, err := StartJoqueServer("localhost:9100", 0, 0)
 	if err != nil {
 		t.Errorf("failed to start JoqueServer: %s", err.Error())
 		return
