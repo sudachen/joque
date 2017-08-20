@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"errors"
 	"io"
 
 	"github.com/golang/glog"
@@ -19,6 +20,8 @@ const (
 	MqQuery
 	// MqComplete identifies COMPLETE message
 	MqComplete
+	// MqQuit identifies QUIT message
+	MqQuit
 )
 
 // Message is the transport unit
@@ -37,35 +40,58 @@ type MQT interface {
 	MqtWrite(io.Writer, *Message) error
 }
 
+// MQ is the message in-out queue
+type MQ struct {
+	In  chan *Message
+	Out chan *Message
+}
+
+// Close queue channels
+func (mq *MQ) Close() {
+	close(mq.In)
+	close(mq.Out)
+}
+
+// Send message to client
+func (mq *MQ) Send(m *Message) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New("closed")
+		}
+	}()
+	mq.In <- m
+	return
+}
+
 // MqtUpgrade upgrades network Conn to Message chanel
-func MqtUpgrade(rw interface{}, mqt MQT) (mq chan *Message) {
-	mq = make(chan *Message, 1)
+func MqtUpgrade(rw interface{}, mqt MQT) (mq *MQ) {
+	mq = &MQ{make(chan *Message, 1), make(chan *Message, 1)}
 	go func() {
 		rd := rw.(io.Reader)
 		for {
 			m, err := mqt.MqtRead(rd)
-			if err == nil {
-				glog.Errorf("failed to read message: %s", err.Error())
-				close(mq)
+			if err != nil {
+				if err != io.EOF {
+					glog.Errorf("failed to read message: %s", err.Error())
+				}
+				mq.Send(nil)
 				return
 			}
-			mq <- m
+			mq.Send(m)
 		}
 	}()
 	go func() {
 		wr := rw.(io.Writer)
 		for {
 			select {
-			case m, ok := <-mq:
+			case m, ok := <-mq.Out:
 				if !ok {
-					glog.Error("failed read message from mq channel")
-					close(mq)
 					return
 				}
 				err := mqt.MqtWrite(wr, m)
-				if err == nil {
+				if err != nil {
 					glog.Errorf("failed to write message: %s", err.Error())
-					close(mq)
+					mq.Send(nil)
 					return
 				}
 			}

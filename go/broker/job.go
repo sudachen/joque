@@ -15,6 +15,7 @@ type _Job struct {
 	qos       int
 	ttl       int
 	priority  int
+	mesgID    int64
 }
 
 func (job *_Job) ID() int64 {
@@ -61,11 +62,25 @@ func (job *_Job) Priority() int {
 	return job.priority
 }
 
+func (job *_Job) SetMesgID(id int64) {
+	job.mesgID = id
+}
+
+func (job *_Job) MesgID() int64 {
+	return job.mesgID
+}
+
 var _uid int64
+
+// NextID returns new id on every call
+func NextID() int64 {
+	_uid++
+	return _uid
+}
 
 // NewJob creates new Job object
 func NewJob(topic string, payload []byte, priority int, ttl int, qos int) (job Job, err error) {
-	if qos < QosAck || qos > QosComplete {
+	if qos < QosRelax || qos > QosComplete {
 		glog.Errorf("invalid Job QoS value %d", qos)
 		err = errors.New("invalid Job QoS value")
 		return
@@ -75,9 +90,8 @@ func NewJob(topic string, payload []byte, priority int, ttl int, qos int) (job J
 		err = errors.New("invalid Job priority")
 		return
 	}
-	_uid++
 	job = &_Job{
-		id:        _uid,
+		id:        NextID(),
 		topic:     topic,
 		payload:   payload,
 		priority:  priority,

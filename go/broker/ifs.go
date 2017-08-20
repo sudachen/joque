@@ -41,6 +41,12 @@ type Job interface {
 	Priority() int
 }
 
+// MesgJob is the abstraction of the binding job to a message id
+type MesgJob interface {
+	SetMesgID(int64)
+	MesgID() int64
+}
+
 // Originator is the abstraction of a job originator
 type Originator interface {
 	ID() int64
