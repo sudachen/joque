@@ -8,7 +8,7 @@ __Originator__ - the source of job instructions
 __Worker__ - the service subscribed on topic and executes job instructions
 
 __Job__ - some instructions how to do a job.    
-   The broker has no business with instructions, only with jobs queueing, passing them to workers and returnig result to originators, if it is required.
+   The broker does not have a business with instructions, only with jobs as objects to queueing, passing them to workers and returning result to originators, if it is required.
 
 __Topic__ - the rendezvous point where meet originator, worker and job queue.
 
