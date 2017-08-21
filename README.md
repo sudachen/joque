@@ -21,7 +21,7 @@ __Priority__  - the job priority.
    Every job declares self priority . There are three levels: PriorityHigh, PriorityNormal,PriorityLow.
    
 __TTL__  - the time to live.   
-   Every job declares how many times it can be reenqueued on execution failure.
+   Every job declares how many times it can be reenqueued if worker failed to execute it.
    
 ## The main actors and their connections
 
