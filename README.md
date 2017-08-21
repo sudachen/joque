@@ -41,7 +41,7 @@ The broker divided into three packages - broker, server, transport.
 
 ## API (Python)
 
-There is only one module [_joque.py_](https://github.com/sudachen/joque/blob/master/py/joque.py)
+There is only one module [_joque_](https://github.com/sudachen/joque/blob/master/py/joque.py).
 
 The worker code looks like
 
