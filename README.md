@@ -1,7 +1,7 @@
 ## Terms
 
 __Joque__ - the job queue service mediating between job originators and workers
-   The queueing broker is coded in Go. It alsa has Python interface.
+   The queueing broker is coded in Go. It also has Python interface.
    
 __Originator__ - the source of job instructions
 
@@ -15,7 +15,7 @@ __Topic__ - the rendezvous point where meet originator, worker and job queue.
 __Queue__ - the queue of jobs. 
 
 __QoS__ - the quality of service level.
-   Every job declares required QoS. Therea are three levels: QosRelax, QosAck, QosComplete. QosRelax means originator does not warry abot acknoladgments. It does likes fire and forget. QoSAck - Originator requires acknoladgment when job enqueueued. QosComplete - originator requires job result or acknoladgment when jobe is done.
+   Every job declares required QoS. There are three levels: QosRelax, QosAck, QosComplete. QosRelax means originator does not warry about acknoladgments. It does likes fire and forget. QosAck - Originator requires acknoladgment when job enqueueued. QosComplete - originator requires job result or acknoladgment when jobe is done.
    
 __Priority__  - the job priority.
    Every job declares self priority . There are three levels: PriorityHigh, PriorityNormal,PriorityLow.
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     jq.serve()
 ```
 
-Jobs can be accessed like following
+Jobs can be used in following maner
 
 ```python
 from joque import Joque
