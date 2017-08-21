@@ -33,7 +33,7 @@ For every client (both origionator and worker) server starts three goroutines. T
 
 ## Broker (Golang)
 
-The broker divided into three packages - broker, server, transport. 
+The broker divided into three packages: 
 
 * The [_broker package_](https://github.com/sudachen/joque/tree/master/go/broker) contains broker interfaces and function [_StartJoqueBroker_](https://github.com/sudachen/joque/blob/master/go/broker/jqbroker.go#L311).
 * The [_transport package_](https://github.com/sudachen/joque/tree/master/go/transport) contains simple ASCII messaging transport [_ASCIIMqt_](https://github.com/sudachen/joque/blob/master/go/transport/asciimqt.go#L15) and function [_Upgrade_](https://github.com/sudachen/joque/blob/master/go/transport/transport.go#L72).
