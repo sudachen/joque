@@ -23,7 +23,7 @@ __Priority__  - the job priority.
 __TTL__  - the time to live.
    Every job declares how many times it can be reenqueued on execution failure.
    
-## The main actors and them connectivity
+## The main actors and their connections
 
 ![](joque_1.jpg)
    
