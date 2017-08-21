@@ -82,6 +82,7 @@ func StartJoqueServer(where string, maxQueLength int, maxTTL int) (srv *JoqueSer
 	}()
 
 	err = <-c
+	close(c)
 	if err == nil {
 		glog.Infof("joque server started")
 	}
