@@ -35,9 +35,9 @@ For every client (both origionator and worker) starts three goroutines. Two of t
 
 The broker divided into three packages - broker, server, transport. 
 
-* The __broker package__ contains broker interfaces and function [_StartJoqueBroker_](https://github.com/sudachen/joque/blob/master/go/broker/jqbroker.go#L311).
-* The __transport package__ contains simple ASCII messaging transport [_ASCIIMqt_](https://github.com/sudachen/joque/blob/master/go/transport/asciimqt.go#L15) and function [_Upgrade_](https://github.com/sudachen/joque/blob/master/go/transport/transport.go#L72).
-* The __server package__ contains functions [_Connect_](https://github.com/sudachen/joque/blob/master/go/server/connect.go#L40) and [_StartJoqueServer_](https://github.com/sudachen/joque/blob/master/go/server/server.go#L28)
+* The [_broker package_](https://github.com/sudachen/joque/tree/master/go/broker) contains broker interfaces and function [_StartJoqueBroker_](https://github.com/sudachen/joque/blob/master/go/broker/jqbroker.go#L311).
+* The [_transport package_](https://github.com/sudachen/joque/tree/master/go/transport) contains simple ASCII messaging transport [_ASCIIMqt_](https://github.com/sudachen/joque/blob/master/go/transport/asciimqt.go#L15) and function [_Upgrade_](https://github.com/sudachen/joque/blob/master/go/transport/transport.go#L72).
+* The [_server package_](https://github.com/sudachen/joque/tree/master/go/server) contains functions [_Connect_](https://github.com/sudachen/joque/blob/master/go/server/connect.go#L40) and [_StartJoqueServer_](https://github.com/sudachen/joque/blob/master/go/server/server.go#L28)
 
 ## API (Python)
 
