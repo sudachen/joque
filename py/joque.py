@@ -268,10 +268,6 @@ class Joque(Constants):
         for p in Joque.workers:
             p.send_signal(signal.CTRL_BREAK_EVENT)
             p.wait()
-            #if p.poll() is None:
-            #    time.sleep(0.050)
-            #    #if p.poll() is None:
-            #    #    p.kill()
 
     def start(self, topic_file, workers_cont=1):
         "start required shutdown processes"

@@ -16,7 +16,10 @@ type JoqueServer struct {
 
 // Stop stops server
 func (srv *JoqueServer) Stop() {
+	// server can be stoped by the error,
+	//   chStop will already closed in this way
 	defer recover()
+
 	srv.chStop <- 0
 	<-srv.chStop
 }
@@ -64,18 +67,11 @@ func StartJoqueServer(where string, maxQueLength int, maxTTL int) (srv *JoqueSer
 			l.SetDeadline(time.Now().Add(500 * time.Millisecond))
 			conn, err := l.Accept()
 
-		chkerr:
-			switch err {
-			case nil:
-			case err:
-				switch err := err.(type) {
-				case net.Error:
-					if err.Timeout() {
-						break chkerr
-					}
+			if err != nil {
+				if err, ok := err.(net.Error); !ok || !err.Timeout() {
+					glog.Errorf("tcp accept failed: %s", err.Error())
+					return
 				}
-				glog.Errorf("tcp accept failed: %s", err.Error())
-				return
 			}
 
 			if conn != nil {

@@ -102,8 +102,6 @@ func StartOriginator(t *testing.T, assert OriginatorAssert) (org *_Originator) {
 		chDone:     make(chan struct{}),
 		chComplete: make(chan struct{}),
 		assert:     assert}
-	//go func() {
-	//}()
 	return
 }
 

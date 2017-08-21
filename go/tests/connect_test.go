@@ -119,6 +119,10 @@ type _IO struct {
 	out chan byte
 }
 
+func (sio *_IO) Close() (err error) {
+	return
+}
+
 func (sio *_IO) Read(p []byte) (n int, err error) {
 	defer func() {
 		if r := recover(); r != nil {
