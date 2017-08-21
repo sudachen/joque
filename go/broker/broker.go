@@ -9,11 +9,11 @@ The set of public interfaces
 
 const (
 	// QosRelax means client does not require any acknowledge
-	QosRelax = 0
+	QosRelax = iota
 	// QosAck means client requires acknowledge on job enqueue
-	QosAck = 1
+	QosAck
 	// QosComplete means client requres acknowledge on job enqueue and on job complete
-	QosComplete = 2
+	QosComplete
 )
 
 const (
@@ -63,7 +63,7 @@ type Worker interface {
 	Disconnect()
 }
 
-// Broker is the abstraction of a job queuing service mediating between originators and workers
+// Broker is the abstraction of a job queueing service mediating between originators and workers
 type Broker interface {
 	Enqueue(Job, Originator) (err error)
 	Complete(Job, Worker) (err error)

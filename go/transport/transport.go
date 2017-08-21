@@ -64,10 +64,15 @@ func (mq *MQ) Send(m *Message) (err error) {
 	return
 }
 
+type _Close interface {
+	Close() error
+}
+
 // Upgrade upgrades network Conn to Message chanel
 func Upgrade(rw interface{}, mqt MQT) (mq *MQ) {
 	mq = &MQ{make(chan *Message, 1), make(chan *Message, 1)}
 	go func() {
+		defer rw.(_Close).Close()
 		rd := rw.(io.Reader)
 		for {
 			m, err := mqt.MqtRead(rd)
@@ -82,6 +87,7 @@ func Upgrade(rw interface{}, mqt MQT) (mq *MQ) {
 		}
 	}()
 	go func() {
+		defer rw.(_Close).Close()
 		wr := rw.(io.Writer)
 		for {
 			select {

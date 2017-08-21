@@ -31,11 +31,13 @@ func StartJoqueServer(where string, maxQueLength int, maxTTL int) (srv *JoqueSer
 	go func() {
 		tcpAddr, err := net.ResolveTCPAddr("tcp", where)
 		if err != nil {
+			glog.Error(err.Error())
 			c <- err
 			return
 		}
 		l, err := net.ListenTCP("tcp", tcpAddr)
 		if err != nil {
+			glog.Error(err.Error())
 			c <- err
 			return
 		}
@@ -51,13 +53,21 @@ func StartJoqueServer(where string, maxQueLength int, maxTTL int) (srv *JoqueSer
 		}()
 
 		c <- nil
+
 		for {
-			l.SetDeadline(time.Now().Add(100 * time.Millisecond))
+			select {
+			case <-srv.chStop:
+				return
+			default:
+			}
+
+			l.SetDeadline(time.Now().Add(500 * time.Millisecond))
 			conn, err := l.Accept()
+
 		chkerr:
 			switch err {
 			case nil:
-			default:
+			case err:
 				switch err := err.(type) {
 				case net.Error:
 					if err.Timeout() {
@@ -67,12 +77,10 @@ func StartJoqueServer(where string, maxQueLength int, maxTTL int) (srv *JoqueSer
 				glog.Errorf("tcp accept failed: %s", err.Error())
 				return
 			}
+
 			if conn != nil {
+				glog.Infof("accepting incoming connection form %s", conn.RemoteAddr().String())
 				Connect(transport.Upgrade(conn, new(transport.ASCIIMqt)), brk, maxTTL)
-			}
-			select {
-			case <-srv.chStop:
-				return
 			}
 		}
 	}()
@@ -81,5 +89,6 @@ func StartJoqueServer(where string, maxQueLength int, maxTTL int) (srv *JoqueSer
 	if err == nil {
 		glog.Infof("joque server started")
 	}
+
 	return
 }
