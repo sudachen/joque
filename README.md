@@ -1,7 +1,7 @@
 ## Terms
 
-__Joque__ - the job queue service mediating between job originators and workers
-   The queueing broker is coded in Go. It also has Python interface.
+__Joque__ - the job queueing service mediating between job originators and workers.
+   The queueing broker is coded in Go. Client API has Python interface.
    
 __Originator__ - the source of job instructions
 
