@@ -10,7 +10,17 @@ import logging
 import codecs
 import time
 import re
+import platform
 
+SUBPROCESS_FLAGS = 0
+if platform.system() == 'Windows':
+    SUBPROCESS_FLAGS  = subprocess.CREATE_NEW_PROCESS_GROUP
+    SUBPROCESS_SIGNAL = signal.SIGBREAK
+    SUBPROCESS_EVENT  = signal.CTRL_BREAK_EVENT
+else:
+    SUBPROCESS_SIGNAL = signal.SIGTERM
+    SUBPROCESS_EVENT  = signal.SIGTERM
+    
 class Constants:
     QosRelax = 0
     QosAck = 1
@@ -266,7 +276,7 @@ class Joque(Constants):
     def shutdown():
         "graceful shutdown for all shadow processes"
         for p in Joque.workers:
-            p.send_signal(signal.CTRL_BREAK_EVENT)
+            p.send_signal(SUBPROCESS_EVENT)
             p.wait()
 
     def start(self, topic_file, workers_cont=1):
@@ -280,14 +290,14 @@ class Joque(Constants):
         return subprocess.Popen(['',topic_file],
                                executable = sys.executable,
                                stdin=subprocess.PIPE,
-                               creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+                               creationflags=SUBPROCESS_FLAGS)
 
     def serve(self):
         "serve for jobs as a worker"
 
-        def sigbreak_handle(signum, frame):
+        def sig_handle(signum, frame):
             raise KeyboardInterrupt()
-        signal.signal(signal.SIGBREAK, sigbreak_handle)
+        signal.signal(SUBPROCESS_SIGNAL, sig_handle)
         
         try:
             if self.conn is None:
