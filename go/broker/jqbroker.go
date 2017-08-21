@@ -377,7 +377,8 @@ func StartJoqueBroker(maxQueLength int) Broker {
 		}
 	}()
 
-	_ = <-c
+	// waiting until coroutine be started successful
+	<-c
 	return brk
 }
 
@@ -435,8 +436,8 @@ func (brk *_JoqueBroker) Stop() (err error) {
 		}
 	}()
 
-	brk.chStop <- 0
-	_ = <-brk.chStop
+	brk.chStop <- 0 // signal goroutine to stop
+	<-brk.chStop    // wating until goroutine be stoped
 
 	return
 }

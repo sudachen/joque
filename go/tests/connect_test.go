@@ -82,7 +82,8 @@ func StartUpperBroker() Broker {
 			}
 		}
 	}()
-	_ = <-c
+
+	<-c
 	return brk
 }
 

@@ -81,8 +81,10 @@ func StartJoqueServer(where string, maxQueLength int, maxTTL int) (srv *JoqueSer
 		}
 	}()
 
+	// waiting until goroutine be started successful or failed during starting
 	err = <-c
 	close(c)
+
 	if err == nil {
 		glog.Infof("joque server started")
 	}

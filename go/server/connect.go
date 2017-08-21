@@ -65,7 +65,6 @@ func Connect(mq *transport.MQ, brk broker.Broker, maxTTL int) (err error) {
 		var wrk broker.Worker
 
 		c <- nil
-		close(c)
 
 		for {
 			select {
@@ -192,6 +191,10 @@ func Connect(mq *transport.MQ, brk broker.Broker, maxTTL int) (err error) {
 			}
 		}
 	}()
+
+	// waiting until goroutine be started successful or failed during starting
 	err = <-c
+	close(c)
+
 	return
 }
