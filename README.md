@@ -27,7 +27,7 @@ __TTL__  - the time to live.
 
 ![](joque_1.jpg)
    
-The main actor is a goroutine starting in function [_broker.StartJoqueBroker_](https://github.com/sudachen/joque/blob/master/go/broker/jqbroker.go#L311). This goroutine handle job enqueueing, worker subscribing, applying jobs to workers and forwarding results to job originators. 
+The main actor is a goroutine starting in function [_broker.StartJoqueBroker_](https://github.com/sudachen/joque/blob/master/go/broker/jqbroker.go#L311). This goroutine handles: job enqueueing, worker subscribing, applying jobs to workers and forwarding results to the job's originator. 
 
 For every client (both origionator and worker) server starts three goroutines. Two of them are started by function [_transport.Upgrade_](https://github.com/sudachen/joque/blob/master/go/transport/transport.go#L72) to upgrate tcp connection upto message queue. They handle translation between raw bytes on the tcp connection and their representation in the structure [_transport.Message_](https://github.com/sudachen/joque/blob/master/go/transport/transport.go#L28). To translate messages they use transport [_transport.ASCIIMqt_](https://github.com/sudachen/joque/blob/master/go/transport/asciimqt.go#L15). The third goroutine is started by function [_server.Connect_](https://github.com/sudachen/joque/blob/master/go/server/connect.go#L40). The function [_server.Connect_](https://github.com/sudachen/joque/blob/master/go/server/connect.go#L40) connects message queue with broker. The goroutine handle the client logic regarding to managing job and their results in both originator and worker cases. 
 
