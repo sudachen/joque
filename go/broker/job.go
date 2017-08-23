@@ -7,12 +7,12 @@ import (
 )
 
 const (
-	_UnknownJobState = iota
-	_RejectedJob
-	_SucceededJob
+	unknownJob = iota
+	rejectedJob
+	succeededJob
 )
 
-type _Job struct {
+type theJob struct {
 	id       int64
 	result   []byte
 	state    int
@@ -24,47 +24,47 @@ type _Job struct {
 	mesgID   int64
 }
 
-func (job *_Job) ID() int64 {
+func (job *theJob) ID() int64 {
 	return job.id
 }
 
-func (job *_Job) Result() []byte {
+func (job *theJob) Result() []byte {
 	return job.result
 }
 
-func (job *_Job) SetResult(result []byte) {
+func (job *theJob) SetResult(result []byte) {
 	job.result = result
 }
 
-func (job *_Job) Success() {
-	job.state = _SucceededJob
+func (job *theJob) Success() {
+	job.state = succeededJob
 }
 
-func (job *_Job) IsSucceeded() bool {
-	return job.state == _SucceededJob
+func (job *theJob) IsSucceeded() bool {
+	return job.state == succeededJob
 }
 
-func (job *_Job) Reject() {
-	job.state = _RejectedJob
+func (job *theJob) Reject() {
+	job.state = rejectedJob
 }
 
-func (job *_Job) IsRejected() bool {
-	return job.state == _RejectedJob
+func (job *theJob) IsRejected() bool {
+	return job.state == rejectedJob
 }
 
-func (job *_Job) Topic() string {
+func (job *theJob) Topic() string {
 	return job.topic
 }
 
-func (job *_Job) Payload() []byte {
+func (job *theJob) Payload() []byte {
 	return job.payload
 }
 
-func (job *_Job) QoS() int {
+func (job *theJob) QoS() int {
 	return job.qos
 }
 
-func (job *_Job) CanRetryWithTTL() bool {
+func (job *theJob) CanRetryWithTTL() bool {
 	if job.ttl > 0 {
 		job.ttl--
 		return true
@@ -72,15 +72,15 @@ func (job *_Job) CanRetryWithTTL() bool {
 	return false
 }
 
-func (job *_Job) Priority() int {
+func (job *theJob) Priority() int {
 	return job.priority
 }
 
-func (job *_Job) SetMesgID(id int64) {
+func (job *theJob) SetMesgID(id int64) {
 	job.mesgID = id
 }
 
-func (job *_Job) MesgID() int64 {
+func (job *theJob) MesgID() int64 {
 	return job.mesgID
 }
 
@@ -104,14 +104,14 @@ func NewJob(topic string, payload []byte, priority int, ttl int, qos int) (job J
 		err = errors.New("invalid Job priority")
 		return
 	}
-	job = &_Job{
+	job = &theJob{
 		id:       NextID(),
 		topic:    topic,
 		payload:  payload,
 		priority: priority,
 		ttl:      ttl,
 		qos:      qos,
-		state:    _UnknownJobState,
+		state:    unknownJob,
 	}
 	return
 }

@@ -64,7 +64,7 @@ func (mq *MQ) Send(m *Message) (err error) {
 	return
 }
 
-type _Close interface {
+type theCloser interface {
 	Close() error
 }
 
@@ -72,7 +72,7 @@ type _Close interface {
 func Upgrade(rw interface{}, mqt MQT) (mq *MQ) {
 	mq = &MQ{make(chan *Message, 1), make(chan *Message, 1)}
 	go func() {
-		defer rw.(_Close).Close()
+		defer rw.(theCloser).Close()
 		rd := rw.(io.Reader)
 		for {
 			m, err := mqt.MqtRead(rd)
@@ -87,7 +87,7 @@ func Upgrade(rw interface{}, mqt MQT) (mq *MQ) {
 		}
 	}()
 	go func() {
-		defer rw.(_Close).Close()
+		defer rw.(theCloser).Close()
 		wr := rw.(io.Writer)
 		for {
 			select {

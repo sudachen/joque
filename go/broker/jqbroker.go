@@ -8,81 +8,81 @@ import (
 	"github.com/golang/glog"
 )
 
-// _JoqueBroker is the joque implementation of the broker abstraction
-type _JoqueBroker struct {
-	chJobEnque    chan _JobEnqueChas
-	chJobDone     chan _JobDoneChas
-	chSubscribe   chan _SubscribeChas
-	chUnsubscribe chan _UnsubscribeChas
+// theJoqueBroker is the joque implementation of the broker abstraction
+type theJoqueBroker struct {
+	chJobEnque    chan jobEnqueChas
+	chJobDone     chan jobDoneChas
+	chSubscribe   chan subscribeChas
+	chUnsubscribe chan unsubscribeChas
 	chStop        chan int
-	topic         map[string]*_Topic
-	ordered       *_Topic
-	last          *_Topic
-	workers       map[int64]*_WorkerNfo
+	topic         map[string]*theTopic
+	ordered       *theTopic
+	last          *theTopic
+	workers       map[int64]*theWorkerNfo
 	maxQueLength  int
 	curQueLength  int
 }
 
-// _JobEnqueChas is an envelope to communicate with broker
+// jobEnqueChas is an envelope to communicate with broker
 //   Broker.Enqueue method uses it to enqueue Job to the broker queue
-type _JobEnqueChas struct {
+type jobEnqueChas struct {
 	job  Job
 	orig Originator
 }
 
-// _JobDoneChas is an envelope to communicate with broker
+// jobDoneChas is an envelope to communicate with broker
 //   Broker.Complete method uses it to notify broker on job execution end
-type _JobDoneChas struct {
+type jobDoneChas struct {
 	jobID int64
 	wrkID int64
 }
 
-// _SubscribeChas is an envelope to communicate with broker
+// subscribeChas is an envelope to communicate with broker
 //   Broker.Subscribe method use it to subscribe workers to the topic
-type _SubscribeChas struct {
+type subscribeChas struct {
 	wrk       Worker
 	topicName string
 }
 
-// _UnsubscribeChas is an envelope to communicate with broker
+// unsubscribeChas is an envelope to communicate with broker
 //   Broker.unsubscribe method use it unsubscribe workers
-type _UnsubscribeChas struct {
+type unsubscribeChas struct {
 	wrkID int64
 	lost  bool
 }
 
-// _Topic is the named queue container
+// theTopic is the named queue container
 //   workers subscrube to the topic for recivening job to execute
 //   originators publish jobs to the topic
-type _Topic struct {
+type theTopic struct {
 	name       string
-	wrkQueHead *_WorkerNfo
-	wrkQueTail *_WorkerNfo
-	jobQueHead *_JobNfo
-	jobQueTail [PriorityCount]*_JobNfo
-	next       *_Topic
+	wrkQueHead *theWorkerNfo
+	wrkQueTail *theWorkerNfo
+	jobQueHead *theJobNfo
+	jobQueTail [PriorityCount]*theJobNfo
+	next       *theTopic
 }
 
-// _WorkerNfo is an information about subsrcibed worker
-type _WorkerNfo struct {
+// theWorkerNfo is an information about subsrcibed worker
+type theWorkerNfo struct {
 	wrk     Worker
-	topic   *_Topic
-	currJob *_JobNfo
-	next    *_WorkerNfo
+	topic   *theTopic
+	currJob *theJobNfo
+	next    *theWorkerNfo
 }
 
-// _JobNfo is an information about enqueued job
-type _JobNfo struct {
+// theJobNfo is an information about enqueued job
+type theJobNfo struct {
 	job     Job
 	started time.Time
 	orig    Originator
-	next    *_JobNfo
+	next    *theJobNfo
 }
 
-func (brk *_JoqueBroker) GetTopic(topicName string) (topic *_Topic) {
+func (brk *theJoqueBroker) GetTopic(topicName string) (topic *theTopic) {
 	topic = brk.topic[topicName]
 	if topic == nil {
-		topic = &_Topic{name: topicName}
+		topic = &theTopic{name: topicName}
 		brk.topic[topicName] = topic
 		topic.next = brk.ordered
 		brk.ordered = topic
@@ -90,7 +90,7 @@ func (brk *_JoqueBroker) GetTopic(topicName string) (topic *_Topic) {
 	return
 }
 
-func (wrkNfo *_WorkerNfo) Enqueue() {
+func (wrkNfo *theWorkerNfo) Enqueue() {
 	wrkID := wrkNfo.wrk.ID()
 	if wrkNfo.topic == nil {
 		glog.Fatalf("assertion: worker %d is unbond", wrkID)
@@ -113,7 +113,7 @@ func (wrkNfo *_WorkerNfo) Enqueue() {
 	topic.wrkQueTail = wrkNfo
 }
 
-func (wrkNfo *_WorkerNfo) Dequeue() {
+func (wrkNfo *theWorkerNfo) Dequeue() {
 	topic := wrkNfo.topic
 	nfo := topic.wrkQueHead
 
@@ -138,19 +138,19 @@ func (wrkNfo *_WorkerNfo) Dequeue() {
 	wrkNfo.next = nil
 }
 
-func (brk *_JoqueBroker) RegisterWorker(wrk Worker, topicName string) {
+func (brk *theJoqueBroker) RegisterWorker(wrk Worker, topicName string) {
 	glog.Infof("worker %d sregistered in topic %s", wrk.ID(), topicName)
 	if brk.workers[wrk.ID()] != nil {
 		glog.Errorf("worker %d already registered in topic %s", wrk.ID(), brk.workers[wrk.ID()].topic.name)
 		return
 	}
 	topic := brk.GetTopic(topicName)
-	wrkNfo := &_WorkerNfo{wrk: wrk, topic: topic}
+	wrkNfo := &theWorkerNfo{wrk: wrk, topic: topic}
 	brk.workers[wrk.ID()] = wrkNfo
 	wrkNfo.Enqueue()
 }
 
-func (brk *_JoqueBroker) UnregisterWorker(wrkID int64, lost bool) {
+func (brk *theJoqueBroker) UnregisterWorker(wrkID int64, lost bool) {
 	wrkNfo := brk.workers[wrkID]
 	if wrkNfo == nil {
 		glog.Errorf("worker %d is not registered", wrkID)
@@ -171,14 +171,14 @@ func (brk *_JoqueBroker) UnregisterWorker(wrkID int64, lost bool) {
 	delete(brk.workers, wrkID)
 }
 
-func (brk *_JoqueBroker) EnqueueJob(job Job, orig Originator) {
+func (brk *theJoqueBroker) EnqueueJob(job Job, orig Originator) {
 	prior := job.Priority()
 	if prior < PriorityHigh && prior > PriorityLow {
 		glog.Errorf("job %d {%s} has invalid priority %d", job.ID(), job.Topic(), prior)
 		return
 	}
 	topic := brk.GetTopic(job.Topic())
-	nfo := &_JobNfo{job: job, orig: orig}
+	nfo := &theJobNfo{job: job, orig: orig}
 	afprior := prior
 	for afprior >= PriorityHigh {
 		if topic.jobQueTail[afprior] != nil {
@@ -202,7 +202,7 @@ func (brk *_JoqueBroker) EnqueueJob(job Job, orig Originator) {
 	glog.Infof("job %d enqueued", job.ID())
 }
 
-func (topic *_Topic) ExecuteNextJob() (wrkNfo *_WorkerNfo) {
+func (topic *theTopic) ExecuteNextJob() (wrkNfo *theWorkerNfo) {
 
 	jobNfo := topic.jobQueHead
 	if jobNfo == nil || topic.wrkQueHead == nil {
@@ -226,7 +226,7 @@ func (topic *_Topic) ExecuteNextJob() (wrkNfo *_WorkerNfo) {
 	return
 }
 
-func (brk *_JoqueBroker) ExecuteNextJob() (wrkNfo *_WorkerNfo) {
+func (brk *theJoqueBroker) ExecuteNextJob() (wrkNfo *theWorkerNfo) {
 	topic := brk.last
 
 	if topic == nil {
@@ -259,7 +259,7 @@ func (brk *_JoqueBroker) ExecuteNextJob() (wrkNfo *_WorkerNfo) {
 	return
 }
 
-func (brk *_JoqueBroker) ExecuteJobs() {
+func (brk *theJoqueBroker) ExecuteJobs() {
 	for {
 		if brk.ExecuteNextJob() == nil {
 			break
@@ -267,7 +267,7 @@ func (brk *_JoqueBroker) ExecuteJobs() {
 	}
 }
 
-func (brk *_JoqueBroker) JobDone(wrkID int64, jobID int64) (job Job, orig Originator) {
+func (brk *theJoqueBroker) JobDone(wrkID int64, jobID int64) (job Job, orig Originator) {
 	wrk := brk.workers[wrkID]
 	if wrk == nil {
 		glog.Errorf("opss, there is no worker with id %d which just done job %d", wrkID, jobID)
@@ -297,12 +297,12 @@ func (brk *_JoqueBroker) JobDone(wrkID int64, jobID int64) (job Job, orig Origin
 	return
 }
 
-func (brk *_JoqueBroker) CompleteJob(orig Originator, job Job) {
+func (brk *theJoqueBroker) CompleteJob(orig Originator, job Job) {
 	// have i use a goroutine?!
 	orig.Complete(job)
 }
 
-func (brk *_JoqueBroker) AcknowledgeJob(orig Originator, job Job) {
+func (brk *theJoqueBroker) AcknowledgeJob(orig Originator, job Job) {
 	// have i use a goroutine?!
 	orig.Acknowledge(job)
 }
@@ -314,14 +314,14 @@ func StartJoqueBroker(maxQueLength int) Broker {
 		maxQueLength = math.MaxInt32
 	}
 
-	brk := &_JoqueBroker{
-		topic:         make(map[string]*_Topic),
-		workers:       make(map[int64]*_WorkerNfo),
-		chJobDone:     make(chan _JobDoneChas),
-		chJobEnque:    make(chan _JobEnqueChas),
-		chSubscribe:   make(chan _SubscribeChas),
-		chUnsubscribe: make(chan _UnsubscribeChas),
-		chStop:        make(chan int),
+	brk := &theJoqueBroker{
+		topic:         make(map[string]*theTopic),
+		workers:       make(map[int64]*theWorkerNfo),
+		chJobDone:     make(chan jobDoneChas),
+		chJobEnque:    make(chan jobEnqueChas),
+		chSubscribe:   make(chan subscribeChas),
+		chUnsubscribe: make(chan unsubscribeChas),
+		chStop:        make(chan int), // unbuffered!
 		maxQueLength:  maxQueLength,
 	}
 
@@ -388,47 +388,47 @@ Broker interface implementation
 
 */
 
-func (brk *_JoqueBroker) Enqueue(job Job, orig Originator) (err error) {
+func (brk *theJoqueBroker) Enqueue(job Job, orig Originator) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New("broker is stopped")
 		}
 	}()
-	brk.chJobEnque <- _JobEnqueChas{job, orig}
+	brk.chJobEnque <- jobEnqueChas{job, orig}
 	return
 }
 
-func (brk *_JoqueBroker) Complete(job Job, wrk Worker) (err error) {
+func (brk *theJoqueBroker) Complete(job Job, wrk Worker) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New("broker is stopped")
 		}
 	}()
-	brk.chJobDone <- _JobDoneChas{job.ID(), wrk.ID()}
+	brk.chJobDone <- jobDoneChas{job.ID(), wrk.ID()}
 	return
 }
 
-func (brk *_JoqueBroker) Subscribe(wrk Worker, topic string) (err error) {
+func (brk *theJoqueBroker) Subscribe(wrk Worker, topic string) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New("broker is stopped")
 		}
 	}()
-	brk.chSubscribe <- _SubscribeChas{wrk, topic}
+	brk.chSubscribe <- subscribeChas{wrk, topic}
 	return
 }
 
-func (brk *_JoqueBroker) Unsubscribe(wrk Worker, lost bool) (err error) {
+func (brk *theJoqueBroker) Unsubscribe(wrk Worker, lost bool) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New("broker is stopped")
 		}
 	}()
-	brk.chUnsubscribe <- _UnsubscribeChas{wrk.ID(), lost}
+	brk.chUnsubscribe <- unsubscribeChas{wrk.ID(), lost}
 	return
 }
 
-func (brk *_JoqueBroker) Stop() (err error) {
+func (brk *theJoqueBroker) Stop() (err error) {
 
 	defer func() {
 		if r := recover(); r != nil {

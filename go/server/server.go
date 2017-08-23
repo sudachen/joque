@@ -28,7 +28,7 @@ func (srv *JoqueServer) Stop() {
 func StartJoqueServer(where string, maxQueLength int, maxTTL int) (srv *JoqueServer, err error) {
 
 	glog.Infof("starting joque server")
-	srv = &JoqueServer{make(chan int)}
+	srv = &JoqueServer{make(chan int)} // unbuffered channel!
 	c := make(chan error)
 
 	go func() {
