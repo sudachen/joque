@@ -1,43 +1,47 @@
 ## Terms
 
-__Joque__ - the job queue service mediating between job originators and workers
-   The queueing broker is coded in Go. It also has Python interface.
+__Joque__ - the queuing job broker mediating between job originators and workers.   
+   The queueing broker is coded in Go. Client API has Python interface.
    
 __Originator__ - the source of job instructions
 
 __Worker__ - the service subscribed on topic and executes job instructions
 
-__Job__ - some instructions to do job. 
-   The broker has no business with instructions, only queueing jobs, passing them to workers and returnig result to origiator, if it is required.
+__Job__ - some instructions how to do a job.    
+   The broker does not have a business with instructions, only with jobs as objects to queueing, passing them to workers and returning result to originators, if it is required.
 
 __Topic__ - the rendezvous point where meet originator, worker and job queue.
 
 __Queue__ - the queue of jobs. 
 
-__QoS__ - the quality of service level.
+__QoS__ - the quality of service level.   
    Every job declares required QoS. There are three levels: QosRelax, QosAck, QosComplete. QosRelax means originator does not warry about acknoladgments. It does likes fire and forget. QosAck - Originator requires acknoladgment when job enqueueued. QosComplete - originator requires job result or acknoladgment when jobe is done.
    
-__Priority__  - the job priority.
+__Priority__  - the job priority.   
    Every job declares self priority . There are three levels: PriorityHigh, PriorityNormal,PriorityLow.
    
-__TTL__  - the time to live.
-   Every job declares how many times it can be reenqueued on execution failure.
+__TTL__  - the time to live.   
+   Every job declares how many times it can be reenqueued if worker failed to execute it.
    
 ## The main actors and their connections
 
 ![](joque_1.jpg)
    
+The main actor is a goroutine starting in function [_broker.StartJoqueBroker_](https://github.com/sudachen/joque/blob/master/go/broker/jqbroker.go#L311). This goroutine handles: job enqueueing, worker subscribing, applying jobs to workers and forwarding results to the job's originator. 
+
+For every client (both origionator and worker) server starts three goroutines. Two of them are started by function [_transport.Upgrade_](https://github.com/sudachen/joque/blob/master/go/transport/transport.go#L72) to upgrate tcp connection upto message queue. They handle translation between raw bytes on the tcp connection and their representation in the structure [_transport.Message_](https://github.com/sudachen/joque/blob/master/go/transport/transport.go#L28). To translate messages they use transport [_transport.ASCIIMqt_](https://github.com/sudachen/joque/blob/master/go/transport/asciimqt.go#L15). The third goroutine is started by function [_server.Connect_](https://github.com/sudachen/joque/blob/master/go/server/connect.go#L40). The function [_server.Connect_](https://github.com/sudachen/joque/blob/master/go/server/connect.go#L40) connects message queue with broker. The goroutine handles client logic regarding to managing job and their results in both originator and worker cases. 
+
 ## Broker (Golang)
 
-The broker divided into three packages - broker, server, transport. 
+The broker divided into three packages: 
 
-* The __broker package__ contains broker interfaces and function StartJoqueBroker.
-* The __transport package__ contains simple ASCII messaging transport ASCIIMqt and function Upgrade.
-* The __server package__ contains functions Connect and StartJoqueServer
+* The [_broker package_](https://github.com/sudachen/joque/tree/master/go/broker) contains [_broker interfaces_](https://github.com/sudachen/joque/blob/master/go/broker/broker.go) and function [_StartJoqueBroker_](https://github.com/sudachen/joque/blob/master/go/broker/jqbroker.go#L311).
+* The [_transport package_](https://github.com/sudachen/joque/tree/master/go/transport) contains simple ASCII messaging transport [_ASCIIMqt_](https://github.com/sudachen/joque/blob/master/go/transport/asciimqt.go#L15) and function [_Upgrade_](https://github.com/sudachen/joque/blob/master/go/transport/transport.go#L72).
+* The [_server package_](https://github.com/sudachen/joque/tree/master/go/server) contains functions [_Connect_](https://github.com/sudachen/joque/blob/master/go/server/connect.go#L40) and [_StartJoqueServer_](https://github.com/sudachen/joque/blob/master/go/server/server.go#L28)
 
 ## API (Python)
 
-There is only one module joque.py 
+There is only one module [_joque_](https://github.com/sudachen/joque/blob/master/py/joque.py).
 
 The worker code looks like
 
