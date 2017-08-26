@@ -7,8 +7,6 @@ import (
 	"io"
 	"strconv"
 	"strings"
-
-	"github.com/golang/glog"
 )
 
 // ASCIIMqt is the ascii message queue transport
@@ -294,7 +292,6 @@ func (mqt *ASCIIMqt) MqtWrite(wr io.Writer, m *Message) (err error) {
 	if err = bf.WriteByte('\n'); err != nil {
 		return
 	}
-	glog.Info(bf.String())
 	_, err = wr.Write(bf.Bytes())
 	return
 }

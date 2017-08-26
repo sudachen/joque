@@ -8,7 +8,7 @@ import (
 	"github.com/sudachen/joque/go/transport"
 )
 
-type theConnect struct {
+type connection struct {
 	id            int64
 	chExec        chan broker.Job
 	chComplete    chan broker.Job
@@ -16,23 +16,23 @@ type theConnect struct {
 	chDisconnect  chan int
 }
 
-func (c *theConnect) ID() int64 {
+func (c *connection) ID() int64 {
 	return c.id
 }
 
-func (c *theConnect) Acknowledge(job broker.Job) {
+func (c *connection) Acknowledge(job broker.Job) {
 	c.chAcknowledge <- job
 }
 
-func (c *theConnect) Complete(job broker.Job) {
+func (c *connection) Complete(job broker.Job) {
 	c.chComplete <- job
 }
 
-func (c *theConnect) Execute(job broker.Job) {
+func (c *connection) Execute(job broker.Job) {
 	c.chExec <- job
 }
 
-func (c *theConnect) Disconnect() {
+func (c *connection) Disconnect() {
 	c.chDisconnect <- 0
 }
 
@@ -46,7 +46,7 @@ func Connect(mq *transport.MQ, brk broker.Broker, maxTTL int) (err error) {
 		results := make(map[int64]broker.Job)
 		jobs := make(map[int64]broker.Job)
 
-		self := theConnect{
+		self := connection{
 			id:            broker.NextID(),
 			chComplete:    make(chan broker.Job, 1),
 			chAcknowledge: make(chan broker.Job, 1),

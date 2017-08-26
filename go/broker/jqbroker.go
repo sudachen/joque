@@ -8,8 +8,8 @@ import (
 	"github.com/golang/glog"
 )
 
-// theJoqueBroker is the joque implementation of the broker abstraction
-type theJoqueBroker struct {
+// joqueBroker is the joque implementation of the broker abstraction
+type joqueBroker struct {
 	chJobEnque    chan jobEnqueChas
 	chJobDone     chan jobDoneChas
 	chSubscribe   chan subscribeChas
@@ -18,7 +18,7 @@ type theJoqueBroker struct {
 	topic         map[string]*theTopic
 	ordered       *theTopic
 	last          *theTopic
-	workers       map[int64]*theWorkerNfo
+	workers       map[int64]*workerInfo
 	maxQueLength  int
 	curQueLength  int
 }
@@ -56,30 +56,30 @@ type unsubscribeChas struct {
 //   originators publish jobs to the topic
 type theTopic struct {
 	name       string
-	wrkQueHead *theWorkerNfo
-	wrkQueTail *theWorkerNfo
-	jobQueHead *theJobNfo
-	jobQueTail [PriorityCount]*theJobNfo
+	wrkQueHead *workerInfo
+	wrkQueTail *workerInfo
+	jobQueHead *jobInfo
+	jobQueTail [PriorityCount]*jobInfo
 	next       *theTopic
 }
 
-// theWorkerNfo is an information about subsrcibed worker
-type theWorkerNfo struct {
+// workerInfo is an information about subsrcibed worker
+type workerInfo struct {
 	wrk     Worker
 	topic   *theTopic
-	currJob *theJobNfo
-	next    *theWorkerNfo
+	currJob *jobInfo
+	next    *workerInfo
 }
 
-// theJobNfo is an information about enqueued job
-type theJobNfo struct {
+// jobInfo is an information about enqueued job
+type jobInfo struct {
 	job     Job
 	started time.Time
 	orig    Originator
-	next    *theJobNfo
+	next    *jobInfo
 }
 
-func (brk *theJoqueBroker) GetTopic(topicName string) (topic *theTopic) {
+func (brk *joqueBroker) GetTopic(topicName string) (topic *theTopic) {
 	topic = brk.topic[topicName]
 	if topic == nil {
 		topic = &theTopic{name: topicName}
@@ -90,7 +90,7 @@ func (brk *theJoqueBroker) GetTopic(topicName string) (topic *theTopic) {
 	return
 }
 
-func (wrkNfo *theWorkerNfo) Enqueue() {
+func (wrkNfo *workerInfo) Enqueue() {
 	wrkID := wrkNfo.wrk.ID()
 	if wrkNfo.topic == nil {
 		glog.Fatalf("assertion: worker %d is unbond", wrkID)
@@ -113,7 +113,7 @@ func (wrkNfo *theWorkerNfo) Enqueue() {
 	topic.wrkQueTail = wrkNfo
 }
 
-func (wrkNfo *theWorkerNfo) Dequeue() {
+func (wrkNfo *workerInfo) Dequeue() {
 	topic := wrkNfo.topic
 	nfo := topic.wrkQueHead
 
@@ -138,19 +138,19 @@ func (wrkNfo *theWorkerNfo) Dequeue() {
 	wrkNfo.next = nil
 }
 
-func (brk *theJoqueBroker) RegisterWorker(wrk Worker, topicName string) {
+func (brk *joqueBroker) RegisterWorker(wrk Worker, topicName string) {
 	glog.Infof("worker %d sregistered in topic %s", wrk.ID(), topicName)
 	if brk.workers[wrk.ID()] != nil {
 		glog.Errorf("worker %d already registered in topic %s", wrk.ID(), brk.workers[wrk.ID()].topic.name)
 		return
 	}
 	topic := brk.GetTopic(topicName)
-	wrkNfo := &theWorkerNfo{wrk: wrk, topic: topic}
+	wrkNfo := &workerInfo{wrk: wrk, topic: topic}
 	brk.workers[wrk.ID()] = wrkNfo
 	wrkNfo.Enqueue()
 }
 
-func (brk *theJoqueBroker) UnregisterWorker(wrkID int64, lost bool) {
+func (brk *joqueBroker) UnregisterWorker(wrkID int64, lost bool) {
 	wrkNfo := brk.workers[wrkID]
 	if wrkNfo == nil {
 		glog.Errorf("worker %d is not registered", wrkID)
@@ -171,14 +171,14 @@ func (brk *theJoqueBroker) UnregisterWorker(wrkID int64, lost bool) {
 	delete(brk.workers, wrkID)
 }
 
-func (brk *theJoqueBroker) EnqueueJob(job Job, orig Originator) {
+func (brk *joqueBroker) EnqueueJob(job Job, orig Originator) {
 	prior := job.Priority()
 	if prior < PriorityHigh && prior > PriorityLow {
 		glog.Errorf("job %d {%s} has invalid priority %d", job.ID(), job.Topic(), prior)
 		return
 	}
 	topic := brk.GetTopic(job.Topic())
-	nfo := &theJobNfo{job: job, orig: orig}
+	nfo := &jobInfo{job: job, orig: orig}
 	afprior := prior
 	for afprior >= PriorityHigh {
 		if topic.jobQueTail[afprior] != nil {
@@ -202,7 +202,7 @@ func (brk *theJoqueBroker) EnqueueJob(job Job, orig Originator) {
 	glog.Infof("job %d enqueued", job.ID())
 }
 
-func (topic *theTopic) ExecuteNextJob() (wrkNfo *theWorkerNfo) {
+func (topic *theTopic) ExecuteNextJob() (wrkNfo *workerInfo) {
 
 	jobNfo := topic.jobQueHead
 	if jobNfo == nil || topic.wrkQueHead == nil {
@@ -226,7 +226,7 @@ func (topic *theTopic) ExecuteNextJob() (wrkNfo *theWorkerNfo) {
 	return
 }
 
-func (brk *theJoqueBroker) ExecuteNextJob() (wrkNfo *theWorkerNfo) {
+func (brk *joqueBroker) ExecuteNextJob() (wrkNfo *workerInfo) {
 	topic := brk.last
 
 	if topic == nil {
@@ -259,7 +259,7 @@ func (brk *theJoqueBroker) ExecuteNextJob() (wrkNfo *theWorkerNfo) {
 	return
 }
 
-func (brk *theJoqueBroker) ExecuteJobs() {
+func (brk *joqueBroker) ExecuteJobs() {
 	for {
 		if brk.ExecuteNextJob() == nil {
 			break
@@ -267,7 +267,7 @@ func (brk *theJoqueBroker) ExecuteJobs() {
 	}
 }
 
-func (brk *theJoqueBroker) JobDone(wrkID int64, jobID int64) (job Job, orig Originator) {
+func (brk *joqueBroker) JobDone(wrkID int64, jobID int64) (job Job, orig Originator) {
 	wrk := brk.workers[wrkID]
 	if wrk == nil {
 		glog.Errorf("opss, there is no worker with id %d which just done job %d", wrkID, jobID)
@@ -297,12 +297,12 @@ func (brk *theJoqueBroker) JobDone(wrkID int64, jobID int64) (job Job, orig Orig
 	return
 }
 
-func (brk *theJoqueBroker) CompleteJob(orig Originator, job Job) {
+func (brk *joqueBroker) CompleteJob(orig Originator, job Job) {
 	// have i use a goroutine?!
 	orig.Complete(job)
 }
 
-func (brk *theJoqueBroker) AcknowledgeJob(orig Originator, job Job) {
+func (brk *joqueBroker) AcknowledgeJob(orig Originator, job Job) {
 	// have i use a goroutine?!
 	orig.Acknowledge(job)
 }
@@ -314,9 +314,9 @@ func StartJoqueBroker(maxQueLength int) Broker {
 		maxQueLength = math.MaxInt32
 	}
 
-	brk := &theJoqueBroker{
+	brk := &joqueBroker{
 		topic:         make(map[string]*theTopic),
-		workers:       make(map[int64]*theWorkerNfo),
+		workers:       make(map[int64]*workerInfo),
 		chJobDone:     make(chan jobDoneChas),
 		chJobEnque:    make(chan jobEnqueChas),
 		chSubscribe:   make(chan subscribeChas),
@@ -388,7 +388,7 @@ Broker interface implementation
 
 */
 
-func (brk *theJoqueBroker) Enqueue(job Job, orig Originator) (err error) {
+func (brk *joqueBroker) Enqueue(job Job, orig Originator) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New("broker is stopped")
@@ -398,7 +398,7 @@ func (brk *theJoqueBroker) Enqueue(job Job, orig Originator) (err error) {
 	return
 }
 
-func (brk *theJoqueBroker) Complete(job Job, wrk Worker) (err error) {
+func (brk *joqueBroker) Complete(job Job, wrk Worker) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New("broker is stopped")
@@ -408,7 +408,7 @@ func (brk *theJoqueBroker) Complete(job Job, wrk Worker) (err error) {
 	return
 }
 
-func (brk *theJoqueBroker) Subscribe(wrk Worker, topic string) (err error) {
+func (brk *joqueBroker) Subscribe(wrk Worker, topic string) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New("broker is stopped")
@@ -418,7 +418,7 @@ func (brk *theJoqueBroker) Subscribe(wrk Worker, topic string) (err error) {
 	return
 }
 
-func (brk *theJoqueBroker) Unsubscribe(wrk Worker, lost bool) (err error) {
+func (brk *joqueBroker) Unsubscribe(wrk Worker, lost bool) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New("broker is stopped")
@@ -428,7 +428,7 @@ func (brk *theJoqueBroker) Unsubscribe(wrk Worker, lost bool) (err error) {
 	return
 }
 
-func (brk *theJoqueBroker) Stop() (err error) {
+func (brk *joqueBroker) Stop() (err error) {
 
 	defer func() {
 		if r := recover(); r != nil {

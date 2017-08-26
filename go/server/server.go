@@ -34,13 +34,11 @@ func StartJoqueServer(where string, maxQueLength int, maxTTL int) (srv *JoqueSer
 	go func() {
 		tcpAddr, err := net.ResolveTCPAddr("tcp", where)
 		if err != nil {
-			glog.Error(err.Error())
 			c <- err
 			return
 		}
 		l, err := net.ListenTCP("tcp", tcpAddr)
 		if err != nil {
-			glog.Error(err.Error())
 			c <- err
 			return
 		}
@@ -84,10 +82,5 @@ func StartJoqueServer(where string, maxQueLength int, maxTTL int) (srv *JoqueSer
 	// waiting until goroutine be started successful or failed during starting
 	err = <-c
 	close(c)
-
-	if err == nil {
-		glog.Infof("joque server started")
-	}
-
 	return
 }
