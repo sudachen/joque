@@ -24,8 +24,6 @@ __TTL__  - the time to live.
    Every job declares how many times it can be reenqueued if worker failed to execute it.
    
 ## The main actors and their connections
-
-![](joque_1.jpg)
    
 The main actor is a goroutine starting in function [_broker.StartJoqueBroker_](https://github.com/sudachen/joque/blob/master/go/broker/jqbroker.go#L311). This goroutine handles: job enqueueing, worker subscribing, applying jobs to workers and forwarding results to the job's originator. 
 
