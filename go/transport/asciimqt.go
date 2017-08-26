@@ -16,7 +16,7 @@ type ASCIIMqt struct {
 	eof bool
 }
 
-func (mqt *ASCIIMqt) _ReadWord(rd io.Reader, bf *bytes.Buffer) (err error) {
+func (mqt *ASCIIMqt) readWord(rd io.Reader, bf *bytes.Buffer) (err error) {
 	c := make([]byte, 1)
 	bf.Reset()
 	var n int
@@ -38,7 +38,7 @@ func (mqt *ASCIIMqt) _ReadWord(rd io.Reader, bf *bytes.Buffer) (err error) {
 	}
 }
 
-func (mqt *ASCIIMqt) _ReadToNlNl(rd io.Reader, bf *bytes.Buffer) (err error) {
+func (mqt *ASCIIMqt) readToNlNl(rd io.Reader, bf *bytes.Buffer) (err error) {
 	c := make([]byte, 1)
 	bf.Reset()
 	var n int
@@ -85,7 +85,7 @@ func (mqt *ASCIIMqt) _ReadToNlNl(rd io.Reader, bf *bytes.Buffer) (err error) {
 	}
 }
 
-func (mqt *ASCIIMqt) _InspectNlNl(rd io.Reader) (err error) {
+func (mqt *ASCIIMqt) inspectNlNl(rd io.Reader) (err error) {
 	c := make([]byte, 1)
 	var n int
 	for {
@@ -120,14 +120,14 @@ func (mqt *ASCIIMqt) MqtRead(rd io.Reader) (m *Message, err error) {
 	var payload []byte
 	var ttl int
 	bf := &bytes.Buffer{}
-	if err = mqt._ReadWord(rd, bf); err != nil {
+	if err = mqt.readWord(rd, bf); err != nil {
 		return
 	}
 	if id, err = strconv.ParseInt(bf.String(), 10, 64); err != nil {
 		mqt.bad = true
 		return
 	}
-	if err = mqt._ReadWord(rd, bf); err != nil {
+	if err = mqt.readWord(rd, bf); err != nil {
 		return
 	}
 	switch k := bf.String(); k {
@@ -151,27 +151,27 @@ func (mqt *ASCIIMqt) MqtRead(rd io.Reader) (m *Message, err error) {
 		return
 	}
 	if kind == MqPublish || kind == MqSubscribe {
-		if err = mqt._ReadWord(rd, bf); err != nil {
+		if err = mqt.readWord(rd, bf); err != nil {
 			return
 		}
 		topic = bf.String()
 	}
 	if kind == MqPublish {
-		if err = mqt._ReadWord(rd, bf); err != nil {
+		if err = mqt.readWord(rd, bf); err != nil {
 			return
 		}
 		if qos, err = strconv.Atoi(bf.String()); err != nil {
 			mqt.bad = true
 			return
 		}
-		if err = mqt._ReadWord(rd, bf); err != nil {
+		if err = mqt.readWord(rd, bf); err != nil {
 			return
 		}
 		if priority, err = strconv.Atoi(bf.String()); err != nil {
 			mqt.bad = true
 			return
 		}
-		if err = mqt._ReadWord(rd, bf); err != nil {
+		if err = mqt.readWord(rd, bf); err != nil {
 			return
 		}
 		if ttl, err = strconv.Atoi(bf.String()); err != nil {
@@ -180,14 +180,14 @@ func (mqt *ASCIIMqt) MqtRead(rd io.Reader) (m *Message, err error) {
 		}
 	}
 	if kind == MqPublish || kind == MqComplete {
-		if err = mqt._ReadToNlNl(rd, bf); err != nil {
+		if err = mqt.readToNlNl(rd, bf); err != nil {
 			return
 		}
 		if bf.Len() != 0 {
 			payload = bf.Bytes()
 		}
 	} else {
-		if err = mqt._InspectNlNl(rd); err != nil {
+		if err = mqt.inspectNlNl(rd); err != nil {
 			return
 		}
 	}
