@@ -139,9 +139,9 @@ func (wrkNfo *workerInfo) Dequeue() {
 }
 
 func (brk *joqueBroker) RegisterWorker(wrk Worker, topicName string) {
-	glog.Infof("worker %d sregistered in topic %s", wrk.ID(), topicName)
+	glog.V(9).Infof("worker %d registered on the topic %s", wrk.ID(), topicName)
 	if brk.workers[wrk.ID()] != nil {
-		glog.Errorf("worker %d already registered in topic %s", wrk.ID(), brk.workers[wrk.ID()].topic.name)
+		glog.Errorf("worker %d already registered on the topic %s", wrk.ID(), brk.workers[wrk.ID()].topic.name)
 		return
 	}
 	topic := brk.GetTopic(topicName)
@@ -241,7 +241,6 @@ func (brk *joqueBroker) ExecuteNextJob() (wrkNfo *workerInfo) {
 
 	for {
 		wrkNfo = topic.ExecuteNextJob()
-		glog.V(9).Infof("topic.ExecuteNextJob() -> %x", wrkNfo)
 		if wrkNfo == nil {
 			topic = topic.next
 			if topic == nil {
@@ -251,6 +250,7 @@ func (brk *joqueBroker) ExecuteNextJob() (wrkNfo *workerInfo) {
 				return
 			}
 		} else {
+			glog.V(9).Infof("topic.ExecuteNextJob() -> %+v", wrkNfo)
 			break
 		}
 	}

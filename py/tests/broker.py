@@ -24,7 +24,7 @@ def start(address=ADDRESS):
     if _broker is None:
         executable = os.path.normpath(os.path.dirname(__file__)+"/../../go/joque.exe")
         print(executable)
-        _broker = subprocess.Popen(['','-addr='+address],
+        _broker = subprocess.Popen(['','-addr='+address,'-logtostderr=true','-v=9'],
                                executable = executable,
                                creationflags=SUBPROCESS_FLAGS)  
         time.sleep(0.5)      
