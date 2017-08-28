@@ -342,7 +342,6 @@ func StartJoqueBroker(maxQueLength int) Broker {
 				close(brk.cUnsubscribe)
 
 				for _, wrkNfo := range brk.workers {
-					glog.Infof("%v", wrkNfo)
 					wrkNfo.wrk.Disconnect()
 				}
 
