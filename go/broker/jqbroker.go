@@ -199,7 +199,7 @@ func (brk *joqueBroker) EnqueueJob(job Job, orig Originator) {
 		topic.jobQueHead = nfo
 		topic.jobQueTail[prior] = nfo
 	}
-	glog.Infof("job %d enqueued", job.ID())
+	glog.V(9).Infof("job %d enqueued", job.ID())
 }
 
 func (topic *theTopic) ExecuteNextJob() (wrkNfo *workerInfo) {
@@ -241,7 +241,7 @@ func (brk *joqueBroker) ExecuteNextJob() (wrkNfo *workerInfo) {
 
 	for {
 		wrkNfo = topic.ExecuteNextJob()
-		glog.Infof("topic.ExecuteNextJob() -> %x", wrkNfo)
+		glog.V(9).Infof("topic.ExecuteNextJob() -> %x", wrkNfo)
 		if wrkNfo == nil {
 			topic = topic.next
 			if topic == nil {
