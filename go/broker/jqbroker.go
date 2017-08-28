@@ -10,17 +10,17 @@ import (
 
 // joqueBroker is the joque implementation of the broker abstraction
 type joqueBroker struct {
-	chJobEnque    chan jobEnqueChas
-	chJobDone     chan jobDoneChas
-	chSubscribe   chan subscribeChas
-	chUnsubscribe chan unsubscribeChas
-	chStop        chan int
-	topic         map[string]*theTopic
-	ordered       *theTopic
-	last          *theTopic
-	workers       map[int64]*workerInfo
-	maxQueLength  int
-	curQueLength  int
+	cJobEnque    chan jobEnqueChas
+	cJobDone     chan jobDoneChas
+	cSubscribe   chan subscribeChas
+	cUnsubscribe chan unsubscribeChas
+	cStop        chan int
+	topic        map[string]*theTopic
+	ordered      *theTopic
+	last         *theTopic
+	workers      map[int64]*workerInfo
+	maxQueLength int
+	curQueLength int
 }
 
 // jobEnqueChas is an envelope to communicate with broker
@@ -315,14 +315,14 @@ func StartJoqueBroker(maxQueLength int) Broker {
 	}
 
 	brk := &joqueBroker{
-		topic:         make(map[string]*theTopic),
-		workers:       make(map[int64]*workerInfo),
-		chJobDone:     make(chan jobDoneChas),
-		chJobEnque:    make(chan jobEnqueChas),
-		chSubscribe:   make(chan subscribeChas),
-		chUnsubscribe: make(chan unsubscribeChas),
-		chStop:        make(chan int), // unbuffered!
-		maxQueLength:  maxQueLength,
+		topic:        make(map[string]*theTopic),
+		workers:      make(map[int64]*workerInfo),
+		cJobDone:     make(chan jobDoneChas),
+		cJobEnque:    make(chan jobEnqueChas),
+		cSubscribe:   make(chan subscribeChas),
+		cUnsubscribe: make(chan unsubscribeChas),
+		cStop:        make(chan int), // unbuffered!
+		maxQueLength: maxQueLength,
 	}
 
 	c := make(chan struct{})
@@ -333,13 +333,13 @@ func StartJoqueBroker(maxQueLength int) Broker {
 
 		for {
 			select {
-			case <-brk.chStop:
+			case <-brk.cStop:
 				glog.Infof("stopping joque broker")
 
-				close(brk.chJobDone)
-				close(brk.chJobEnque)
-				close(brk.chSubscribe)
-				close(brk.chUnsubscribe)
+				close(brk.cJobDone)
+				close(brk.cJobEnque)
+				close(brk.cSubscribe)
+				close(brk.cUnsubscribe)
 
 				for _, wrkNfo := range brk.workers {
 					glog.Infof("%v", wrkNfo)
@@ -352,26 +352,26 @@ func StartJoqueBroker(maxQueLength int) Broker {
 				brk.topic = nil
 
 				glog.Infof("joque broker stoped")
-				close(brk.chStop)
+				close(brk.cStop)
 				return
-			case chas := <-brk.chJobDone:
+			case chas := <-brk.cJobDone:
 				glog.Infof("done job %d", chas.jobID)
 				job, orig := brk.JobDone(chas.wrkID, chas.jobID)
 				if job != nil && job.QoS() >= QosComplete {
 					brk.CompleteJob(orig, job)
 				}
 				brk.ExecuteJobs()
-			case chas := <-brk.chJobEnque:
+			case chas := <-brk.cJobEnque:
 				glog.Infof("enqueue job %d", chas.job.ID())
 				brk.EnqueueJob(chas.job, chas.orig)
 				if chas.job.QoS() > QosRelax {
 					brk.AcknowledgeJob(chas.orig, chas.job)
 				}
 				brk.ExecuteJobs()
-			case chas := <-brk.chSubscribe:
+			case chas := <-brk.cSubscribe:
 				brk.RegisterWorker(chas.wrk, chas.topicName)
 				brk.ExecuteJobs()
-			case chas := <-brk.chUnsubscribe:
+			case chas := <-brk.cUnsubscribe:
 				brk.UnregisterWorker(chas.wrkID, chas.lost)
 			}
 		}
@@ -394,7 +394,7 @@ func (brk *joqueBroker) Enqueue(job Job, orig Originator) (err error) {
 			err = errors.New("broker is stopped")
 		}
 	}()
-	brk.chJobEnque <- jobEnqueChas{job, orig}
+	brk.cJobEnque <- jobEnqueChas{job, orig}
 	return
 }
 
@@ -404,7 +404,7 @@ func (brk *joqueBroker) Complete(job Job, wrk Worker) (err error) {
 			err = errors.New("broker is stopped")
 		}
 	}()
-	brk.chJobDone <- jobDoneChas{job.ID(), wrk.ID()}
+	brk.cJobDone <- jobDoneChas{job.ID(), wrk.ID()}
 	return
 }
 
@@ -414,7 +414,7 @@ func (brk *joqueBroker) Subscribe(wrk Worker, topic string) (err error) {
 			err = errors.New("broker is stopped")
 		}
 	}()
-	brk.chSubscribe <- subscribeChas{wrk, topic}
+	brk.cSubscribe <- subscribeChas{wrk, topic}
 	return
 }
 
@@ -424,7 +424,7 @@ func (brk *joqueBroker) Unsubscribe(wrk Worker, lost bool) (err error) {
 			err = errors.New("broker is stopped")
 		}
 	}()
-	brk.chUnsubscribe <- unsubscribeChas{wrk.ID(), lost}
+	brk.cUnsubscribe <- unsubscribeChas{wrk.ID(), lost}
 	return
 }
 
@@ -436,8 +436,8 @@ func (brk *joqueBroker) Stop() (err error) {
 		}
 	}()
 
-	brk.chStop <- 0 // signal goroutine to stop
-	<-brk.chStop    // wating until goroutine be stoped
+	brk.cStop <- 0 // signal goroutine to stop
+	<-brk.cStop    // wating until goroutine be stoped
 
 	return
 }

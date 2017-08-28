@@ -11,17 +11,17 @@ import (
 
 // JoqueServer is the TCP job queuing service
 type JoqueServer struct {
-	chStop chan int
+	cStop chan int
 }
 
 // Stop stops server
 func (srv *JoqueServer) Stop() {
 	// server can be stoped by the error,
-	//   chStop will already closed in this way
+	//   cStop will already closed in this way
 	defer recover()
 
-	srv.chStop <- 0
-	<-srv.chStop
+	srv.cStop <- 0
+	<-srv.cStop
 }
 
 // StartJoqueServer starts Joque broker on specified tcp host:port
@@ -49,7 +49,7 @@ func StartJoqueServer(where string, maxQueLength int, maxTTL int) (srv *JoqueSer
 			glog.Infof("stopping joque server")
 			l.Close()
 			brk.Stop()
-			close(srv.chStop)
+			close(srv.cStop)
 			glog.Infof("joque server stopped")
 		}()
 
@@ -57,7 +57,7 @@ func StartJoqueServer(where string, maxQueLength int, maxTTL int) (srv *JoqueSer
 
 		for {
 			select {
-			case <-srv.chStop:
+			case <-srv.cStop:
 				return
 			default:
 			}

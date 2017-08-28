@@ -9,31 +9,31 @@ import (
 )
 
 type connection struct {
-	id            int64
-	chExec        chan broker.Job
-	chComplete    chan broker.Job
-	chAcknowledge chan broker.Job
-	chDisconnect  chan int
+	id           int64
+	cExec        chan broker.Job
+	cComplete    chan broker.Job
+	cAcknowledge chan broker.Job
+	cDisconnect  chan int
 }
 
-func (c *connection) ID() int64 {
-	return c.id
+func (conn *connection) ID() int64 {
+	return conn.id
 }
 
-func (c *connection) Acknowledge(job broker.Job) {
-	c.chAcknowledge <- job
+func (conn *connection) Acknowledge(job broker.Job) {
+	conn.cAcknowledge <- job
 }
 
-func (c *connection) Complete(job broker.Job) {
-	c.chComplete <- job
+func (conn *connection) Complete(job broker.Job) {
+	conn.cComplete <- job
 }
 
-func (c *connection) Execute(job broker.Job) {
-	c.chExec <- job
+func (conn *connection) Execute(job broker.Job) {
+	conn.cExec <- job
 }
 
 func (c *connection) Disconnect() {
-	c.chDisconnect <- 0
+	c.cDisconnect <- 0
 }
 
 // Connect connects message queue and broker
@@ -46,20 +46,20 @@ func Connect(mq *transport.MQ, brk broker.Broker, maxTTL int) (err error) {
 		results := make(map[int64]broker.Job)
 		jobs := make(map[int64]broker.Job)
 
-		self := connection{
-			id:            broker.NextID(),
-			chComplete:    make(chan broker.Job, 1),
-			chAcknowledge: make(chan broker.Job, 1),
-			chExec:        make(chan broker.Job, 1),
-			chDisconnect:  make(chan int, 1),
+		conn := connection{
+			id:           broker.NextID(),
+			cComplete:    make(chan broker.Job, 1),
+			cAcknowledge: make(chan broker.Job, 1),
+			cExec:        make(chan broker.Job, 1),
+			cDisconnect:  make(chan int, 1),
 		}
 
 		defer func() {
 			mq.Close()
-			close(self.chComplete)
-			close(self.chAcknowledge)
-			close(self.chExec)
-			close(self.chDisconnect)
+			close(conn.cComplete)
+			close(conn.cAcknowledge)
+			close(conn.cExec)
+			close(conn.cDisconnect)
 		}()
 
 		var wrk broker.Worker
@@ -68,7 +68,7 @@ func Connect(mq *transport.MQ, brk broker.Broker, maxTTL int) (err error) {
 
 		for {
 			select {
-			case job := <-self.chAcknowledge:
+			case job := <-conn.cAcknowledge:
 				glog.Infof("ack on job %d", job.ID())
 				if job.QoS() >= broker.QosAck {
 					var payload []byte
@@ -82,13 +82,13 @@ func Connect(mq *transport.MQ, brk broker.Broker, maxTTL int) (err error) {
 					}
 					mq.Out <- m
 				}
-			case job := <-self.chComplete:
+			case job := <-conn.cComplete:
 				glog.Infof("complete on job %d", job.ID())
 				if job.QoS() >= broker.QosComplete {
 					glog.Infof("set result job %d for msgid %d", job.ID(), job.(broker.MesgJob).MesgID())
 					results[job.(broker.MesgJob).MesgID()] = job
 				}
-			case job := <-self.chExec:
+			case job := <-conn.cExec:
 				m := &transport.Message{
 					ID:       job.ID(),
 					Kind:     transport.MqPublish,
@@ -99,7 +99,7 @@ func Connect(mq *transport.MQ, brk broker.Broker, maxTTL int) (err error) {
 				}
 				mq.Out <- m
 				jobs[job.ID()] = job
-			case <-self.chDisconnect:
+			case <-conn.cDisconnect:
 				if wrk != nil {
 					return
 				}
@@ -128,14 +128,14 @@ func Connect(mq *transport.MQ, brk broker.Broker, maxTTL int) (err error) {
 						return
 					}
 					job.(broker.MesgJob).SetMesgID(m.ID)
-					err = brk.Enqueue(job, &self)
+					err = brk.Enqueue(job, &conn)
 					if err != nil {
 						glog.Errorf("failed to enqueue job: %s", err.Error())
 						return
 					}
 				case transport.MqSubscribe:
 					if wrk == nil {
-						wrk = &self
+						wrk = &conn
 					} else {
 						glog.Errorf("worker %d already subscribed", wrk.ID())
 						return
