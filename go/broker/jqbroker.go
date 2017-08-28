@@ -355,14 +355,14 @@ func StartJoqueBroker(maxQueLength int) Broker {
 				close(brk.cStop)
 				return
 			case chas := <-brk.cJobDone:
-				glog.Infof("done job %d", chas.jobID)
+				glog.V(9).Infof("done job %d", chas.jobID)
 				job, orig := brk.JobDone(chas.wrkID, chas.jobID)
 				if job != nil && job.QoS() >= QosComplete {
 					brk.CompleteJob(orig, job)
 				}
 				brk.ExecuteJobs()
 			case chas := <-brk.cJobEnque:
-				glog.Infof("enqueue job %d", chas.job.ID())
+				glog.V(9).Infof("enqueue job %d", chas.job.ID())
 				brk.EnqueueJob(chas.job, chas.orig)
 				if chas.job.QoS() > QosRelax {
 					brk.AcknowledgeJob(chas.orig, chas.job)

@@ -32,8 +32,8 @@ func (conn *connection) Execute(job broker.Job) {
 	conn.cExec <- job
 }
 
-func (c *connection) Disconnect() {
-	c.cDisconnect <- 0
+func (conn *connection) Disconnect() {
+	conn.cDisconnect <- 0
 }
 
 // Connect connects message queue and broker
@@ -69,7 +69,7 @@ func Connect(mq *transport.MQ, brk broker.Broker, maxTTL int) (err error) {
 		for {
 			select {
 			case job := <-conn.cAcknowledge:
-				glog.Infof("ack on job %d", job.ID())
+				glog.V(9).Infof("ack on job %d", job.ID())
 				if job.QoS() >= broker.QosAck {
 					var payload []byte
 					if job.IsRejected() {
@@ -83,9 +83,9 @@ func Connect(mq *transport.MQ, brk broker.Broker, maxTTL int) (err error) {
 					mq.Out <- m
 				}
 			case job := <-conn.cComplete:
-				glog.Infof("complete on job %d", job.ID())
+				glog.V(9).Infof("complete on job %d", job.ID())
 				if job.QoS() >= broker.QosComplete {
-					glog.Infof("set result job %d for msgid %d", job.ID(), job.(broker.MesgJob).MesgID())
+					glog.V(9).Infof("set result job %d for msgid %d", job.ID(), job.(broker.MesgJob).MesgID())
 					results[job.(broker.MesgJob).MesgID()] = job
 				}
 			case job := <-conn.cExec:
@@ -104,7 +104,6 @@ func Connect(mq *transport.MQ, brk broker.Broker, maxTTL int) (err error) {
 					return
 				}
 			case m := <-mq.In:
-				glog.Infof("msg %v", m)
 				if m == nil {
 					if wrk != nil {
 						brk.Unsubscribe(wrk, true)

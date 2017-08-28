@@ -73,7 +73,7 @@ func StartJoqueServer(where string, maxQueLength int, maxTTL int) (srv *JoqueSer
 			}
 
 			if conn != nil {
-				glog.Infof("accepting incoming connection form %s", conn.RemoteAddr().String())
+				glog.V(8).Infof("accepting incoming connection form %s", conn.RemoteAddr().String())
 				Connect(transport.Upgrade(conn, new(transport.ASCIIMqt)), brk, maxTTL)
 			}
 		}
